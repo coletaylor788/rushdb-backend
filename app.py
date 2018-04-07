@@ -10,7 +10,7 @@ app = Flask.Flask(__name__, static_url_path='')
 CORS(app)
 
 config = {
-    "apiKey": " AIzaSyBJjyzlDHxvM-IcxWZwzYY-cIvtMpVreQU",
+    "apiKey": "AIzaSyBJjyzlDHxvM-IcxWZwzYY-cIvtMpVreQU",
     "authDomain": "rushdb-b1177.firebaseapp.com",
     "databaseURL": "https://rushdb-b1177.firebaseio.com",
     "storageBucket": "rushdb-b1177.appspot.com",
@@ -64,6 +64,19 @@ def submit_rushee():
     db.child(org).child('rushees').push(rushee, userToken)
     return "{\"success\" : true}"
 
+@app.route('/edit-rushee', methods=["POST"])
+def edit_rushee():
+    userToken = Flask.request.get_json()['userToken']
+    userKey = Flask.request.get_json()['userKey']
+    rushee = {}
+    
+    for key, value in Flask.request.get_json().items():
+        if not (key == 'userToken' or key == 'userKey'):
+            rushee[key] = value
+    
+    db.child(org).child('rushees').child(userKey).update(rushee, userToken)
+    return "{\"success\" : true}"
+    
 
 
 
