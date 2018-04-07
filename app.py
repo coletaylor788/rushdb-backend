@@ -45,12 +45,16 @@ def remove_none(arr):
         return arr
 
 @app.route('/get-rushees', methods=["POST"])
-def get_brothers():
+def get_rushees():
     #org = Flask.request.get_json()['org']
     userToken = Flask.request.get_json()['userToken']
 
-    rushees = db.child(org).child('rushees').get(userToken).val()
-    return json.dumps(rushees)
+    try:
+        rushees = db.child(org).child('rushees').get(userToken).val()
+        return json.dumps(rushees)
+    except:
+        return "{\"success\" : false}"
+    
 
 @app.route('/submit-rushee', methods=["POST"])
 def submit_rushee():
@@ -61,8 +65,11 @@ def submit_rushee():
         if not key == 'userToken':
             rushee[key] = value
     
-    db.child(org).child('rushees').push(rushee, userToken)
-    return "{\"success\" : true}"
+    try:
+        db.child(org).child('rushees').push(rushee, userToken)
+        return "{\"success\" : true}"
+    except:
+        return "{\"success\" : false}"
 
 @app.route('/edit-rushee', methods=["POST"])
 def edit_rushee():
@@ -74,8 +81,11 @@ def edit_rushee():
         if not (key == 'userToken' or key == 'userKey'):
             rushee[key] = value
     
-    db.child(org).child('rushees').child(userKey).update(rushee, userToken)
-    return "{\"success\" : true}"
+    try:
+        db.child(org).child('rushees').child(userKey).update(rushee, userToken)
+        return "{\"success\" : true}"
+    except:
+        return "{\"success\" : false}"
     
 
 
