@@ -3,6 +3,8 @@ import flask as Flask
 from flask_cors import CORS
 import pyrebase
 import sys
+from datetime import datetime
+import json
 
 app = Flask.Flask(__name__, static_url_path='')
 CORS(app)
@@ -16,6 +18,8 @@ config = {
 
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
+
+org = 'phikappasigmaan'
 
 @app.route('/')
 def hello():
@@ -34,13 +38,41 @@ def auth():
 
     return str(user['idToken'])
 
+def remove_none(arr):
+    if len(arr) >= 1:
+        return arr[1:]
+    else:
+        return arr
+
 @app.route('/get-rushees', methods=["POST"])
 def get_brothers():
-    org = Flask.request.get_json()['org']
+    #org = Flask.request.get_json()['org']
     userToken = Flask.request.get_json()['userToken']
 
     rushees = db.child(org).child('rushees').get(userToken).val()
-    return str(rushees)
+    return json.dumps(rushees)
+
+@app.route('/submit-rushee', methods=["POST"])
+def submit_rushee():
+    userToken = Flask.request.get_json()['userToken']
+    rushee = {}
+    
+    for key, value in Flask.request.get_json().items():
+        if not key == 'userToken':
+            rushee[key] = value
+    
+    db.child(org).child('rushees').push(rushee, userToken)
+    return "{\"success\" : true}"
+
+
+
+
+
+#sys.stdout.flush()
+
+    
+
+
 
 """
 Main method starts the Flask server
