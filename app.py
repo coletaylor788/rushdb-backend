@@ -18,6 +18,7 @@ config = {
 
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
+storage = firebase.storage()
 
 @app.route('/')
 def hello():
@@ -107,6 +108,25 @@ def get_org(userToken):
 
 #sys.stdout.flush()
 
+@app.route('/get-brothers', methods=["POST"])
+def get_brothers():    
+    userToken = Flask.request.get_json()['userToken']
+
+    try:
+        org = get_org(userToken)
+        brothers = db.child('organizations').child(org).child('brothers').get().val()
+        return json.dumps(brothers)
+    except:
+        return "{\"success\" : false}" 
+
+@app.route('/get-picture', methods=["POST"])
+def get_picture():    
+    userToken = Flask.request.get_json()['userToken']
+    picture_name = "Tom-Hulce-as-Larry-Kroger-tom-hulce-38317385-500-270.jpg"
+    
+    storage.child('deltatauchi/' + picture_name).download("C:/temp/downloaded.jpg", userToken)
+
+    return "Error"
     
 
 
@@ -117,7 +137,7 @@ Main method starts the Flask server
 if __name__ == '__main__':
     # Bind to PORT if defined, otherwise default to 5000.
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    #app.run(host='0.0.0.0', port=port)
 
     #TESTING ONLY! Leave commented in production
-    #app.run(host='127.0.0.1', port=port)
+    app.run(host='127.0.0.1', port=port)
