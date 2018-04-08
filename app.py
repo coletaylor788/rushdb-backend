@@ -82,7 +82,15 @@ def get_rushees():
     try:
         org = get_org(userToken)
         rushees = db.child(org).child('rushees').get(userToken).val()
-        return json.dumps(rushees)
+
+        # Convert to list for front-end processing
+        rushees_list = []
+        for key, value in rushees.items():
+            new_value = dict(value)
+            new_value['key'] = key
+            rushees_list.append(new_value)
+
+        return json.dumps(rushees_list)
     except:
         return "{\"success\" : false}"
     
