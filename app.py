@@ -152,7 +152,15 @@ def get_brothers():
     try:
         org = get_org(userToken)
         brothers = db.child('organizations').child(org).child('brothers').get().val()
-        return json.dumps(brothers)
+        
+        brothers_list = []
+        for uid, name in brothers.items():
+            brother_map = {}
+            brother_map['userId'] = uid
+            brother_map['name'] = name
+            brothers_list.append(brother_map)
+
+        return json.dumps(brothers_list)
     except:
         return "{\"success\" : false}" 
 
