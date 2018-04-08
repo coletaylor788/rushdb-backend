@@ -10,6 +10,49 @@ from os import environ
 app = Flask.Flask(__name__, static_url_path='')
 CORS(app)
 
+def connect_to_admin_database():
+
+    # Must read from environment variables for security
+    auth_dict = {}
+    auth_dict['type'] = environ.get('type')
+    auth_dict['project_id'] = environ.get('project_id')
+    auth_dict['private_key_id'] = environ.get('private_key_id')
+    auth_dict['private_key'] = environ.get('private_key')
+    auth_dict['client_email'] = environ.get('client_email')
+    auth_dict['client_id'] = environ.get('client_id')
+    auth_dict['auth_uri'] = environ.get('auth_uri')
+    auth_dict['token_uri'] = environ.get('token_uri')
+    auth_dict['auth_provider_x509_cert_url'] = environ.get('auth_provider_x509_cert_url')
+    auth_dict['client_x509_cert_url'] = environ.get('client_x509_cert_url')
+
+    with open('temp_auth.json', 'w') as outfile:
+        json.dump(auth_dict, outfile)
+
+    with open('temp_auth.json') as infile:
+        outfile = open("auth.json", "w")
+
+        output = ""
+        for line in infile:
+            output += line
+
+        output = output.replace('\\n', 'n')
+        outfile.write(output)
+        outfile.close()
+
+
+    service_config = {
+        "apiKey": "AIzaSyBJjyzlDHxvM-IcxWZwzYY-cIvtMpVreQU",
+        "authDomain": "rushdb-b1177.firebaseapp.com",
+        "databaseURL": "https://rushdb-b1177.firebaseio.com",
+        "storageBucket": "rushdb-b1177.appspot.com",
+        "serviceAccount": "./auth.json"
+    }
+
+    service_firebase = pyrebase.initialize_app(service_config)
+    db = service_firebase.database()
+
+    return db
+
 config = {
     "apiKey": "AIzaSyBJjyzlDHxvM-IcxWZwzYY-cIvtMpVreQU",
     "authDomain": "rushdb-b1177.firebaseapp.com",
@@ -19,6 +62,7 @@ config = {
 
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
+admin_db = connect_to_admin_database()
 
 @app.route('/')
 def hello():
@@ -125,14 +169,52 @@ def login():
     except:
         return "{\"userToken\" : false}"
     
+@app.route('/get-org-password', methods=["POST"])
+def get_org_password():
+    userToken = Flask.request.get_json()['userToken']
+    
+    try:
+        org = get_org(userToken)
+        password = admin_db.child('org_passwords').child(org).get().val()
+        return "{\"password\" : " + password + "}"
+    except:
+        return "{\"password\" : false}"
+
+@app.route('/create-new-user', methods=["POST"])
+def create_new_user():
+    org = Flask.request.get_json()['org']
+    org_password = Flask.request.get_json()['orgPassword']
+    email = Flask.request.get_json()['email']
+    password = Flask.request.get_json()['password']
+    name = Flask.request.get_json()['name']
+
+    correct_org_password = admin_db.child('org_passwords').child(org).get().val()
+    if org_password == correct_org_password:
+        try:
+            auth = firebase.auth()
+            user = {}
+            try:
+                user = auth.create_user_with_email_and_password(email, password)
+            except:
+                return "{\"success\" : false, \"reason\" : \"User already exists\"}"
+        
+            uid = str(user['localId'])
+            userToken = str(user['idToken'])
+        
+            admin_db.child('organizations').child(org).child('brothers').child(uid).set(name)
+            return "{\"userToken\" : \"" + userToken + "\"}"
+        except:
+            return "{\"success\" : false, \"reason\" : \"Something went wrong\"}"
+    else:
+        return "{\"success\" : false, \"reason\" : \"Invalid organization password\"}"
+
+@app.route('/get-org-list', methods=["POST"])
+def get_org_list():
+    orgs = db.child('organizations').get().val()
+    return json.dumps(orgs)
+
+
 #sys.stdout.flush()
-
-#userToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6ImMwNmEyMTQ5YjdmOTU3MjgwNTJhOTg1YWRlY2JmNWRlMDQ3Y2RhNmYifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vcnVzaGRiLWIxMTc3IiwiYXVkIjoicnVzaGRiLWIxMTc3IiwiYXV0aF90aW1lIjoxNTIzMTQ4NDA4LCJ1c2VyX2lkIjoia2c2YVNrTnJRSmVpcURwM0VDWTl3WDVOd3djMiIsInN1YiI6ImtnNmFTa05yUUplaXFEcDNFQ1k5d1g1Tnd3YzIiLCJpYXQiOjE1MjMxNDg0MDgsImV4cCI6MTUyMzE1MjAwOCwiZW1haWwiOiJicm90aGVyZG9lQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJlbWFpbCI6WyJicm90aGVyZG9lQGdtYWlsLmNvbSJdfSwic2lnbl9pbl9wcm92aWRlciI6InBhc3N3b3JkIn19.o7fUoQiU63HBHlBq8H-BFi-A21RctxdrcFXHEOBL70qtlScfNmhLJvmbjhnv5YNJEstuo28M3Cmsw7xIDX946ngpbxDD7c30PuW5Bx_MDKc2n42kIjf7pGGzREYjLhF4rhWQwAoW4hZt6BdY3B28tU7tEJdtqGy13-jXSRSKw5sx7ELrq98R9k2aXY1t52_kQaTWCraWoI48ZpnvbtiClwc51wWtKvXIrrGVjlCq4ude91SDDN65_MZ6WayVg_-_iARxRYJr9nPcw_p0u6jg74r2WF4H3fDJZnbmnFA2wVNtu2jLCg027875JIdck5j6P5P9wooZFtnwrE8-c6d0uw"
-#picture_name = "Tom-Hulce-as-Larry-Kroger-tom-hulce-38317385-500-270.jpg"
-   
-#url = storage.child('deltatauchi/' + picture_name).download("download.jpg")
-
-
 
 """
 Main method starts the Flask server
