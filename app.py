@@ -118,9 +118,12 @@ def login():
     email = Flask.request.get_json()['email']
     password = Flask.request.get_json()['password']
 
-    auth = firebase.auth()
-    user = auth.sign_in_with_email_and_password(email, password)
-    return "{\"userToken\" : \""+ str(user['idToken']) + "\"}"
+    try:
+        auth = firebase.auth()
+        user = auth.sign_in_with_email_and_password(email, password)
+        return "{\"userToken\" : \""+ str(user['idToken']) + "\"}"
+    except:
+        return "{\"userToken\" : false}"
     
 #sys.stdout.flush()
 
