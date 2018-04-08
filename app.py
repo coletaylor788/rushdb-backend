@@ -224,7 +224,7 @@ def get_org_list():
     for key, value in orgs.items():
         org_map = {}
         org_map['key'] = key
-        org_map['value'] = value['name']
+        org_map['name'] = value['name']
         org_list.append(org_map)
 
     return json.dumps(org_list)
