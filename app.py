@@ -219,7 +219,15 @@ def create_new_user():
 @app.route('/get-org-list', methods=["POST"])
 def get_org_list():
     orgs = db.child('organizations').get().val()
-    return json.dumps(orgs)
+
+    org_list = []
+    for key, value in orgs.items():
+        org_map = {}
+        org_map['key'] = key
+        org_map['value'] = value['name']
+        org_list.append(org_map)
+
+    return json.dumps(org_list)
 
 
 #sys.stdout.flush()
