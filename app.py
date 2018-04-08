@@ -19,8 +19,6 @@ config = {
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
 
-org = 'phikappasigmaan'
-
 @app.route('/')
 def hello():
     return 'Hello World!'
@@ -48,8 +46,9 @@ def remove_none(arr):
 def get_rushees():
     #org = Flask.request.get_json()['org']
     userToken = Flask.request.get_json()['userToken']
-
+    
     try:
+        org = get_org(userToken)
         rushees = db.child(org).child('rushees').get(userToken).val()
         return json.dumps(rushees)
     except:
@@ -66,6 +65,7 @@ def submit_rushee():
             rushee[key] = value
     
     try:
+        org = get_org(userToken)
         db.child(org).child('rushees').push(rushee, userToken)
         return "{\"success\" : true}"
     except:
@@ -82,14 +82,28 @@ def edit_rushee():
             rushee[key] = value
     
     try:
+        org = get_org(userToken)
         db.child(org).child('rushees').child(userKey).update(rushee, userToken)
         return "{\"success\" : true}"
     except:
         return "{\"success\" : false}"
+
+@app.route('/get-org', methods=["POST"])
+def get_org(userToken):
+    orgs = db.child('organizations').get().val()
     
-
-
-
+    #userToken = Flask.request.get_json()['userToken']
+    auth = firebase.auth()
+    account = auth.get_account_info(userToken)
+    userId = account['users'][0]['localId']
+    
+    correct_org = None
+    for org, value in orgs.items():
+        for org_userId, _ in value['brothers'].items():
+            if org_userId == userId:
+                return org
+    
+    return "Error"
 
 #sys.stdout.flush()
 
