@@ -196,7 +196,7 @@ def create_new_user():
             try:
                 user = auth.create_user_with_email_and_password(email, password)
             except:
-                return "{\"success\" : false, \"reason\" : \"User already exists\"}"
+                return "{\"userToken\" : false, \"reason\" : \"User already exists\"}"
         
             uid = str(user['localId'])
             userToken = str(user['idToken'])
@@ -204,9 +204,9 @@ def create_new_user():
             admin_db.child('organizations').child(org).child('brothers').child(uid).set(name)
             return "{\"userToken\" : \"" + userToken + "\"}"
         except:
-            return "{\"success\" : false, \"reason\" : \"Something went wrong\"}"
+            return "{\"userToken\" : false, \"reason\" : \"Something went wrong\"}"
     else:
-        return "{\"success\" : false, \"reason\" : \"Invalid organization password\"}"
+        return "{\"userToken\" : false, \"reason\" : \"Invalid organization password\"}"
 
 @app.route('/get-org-list', methods=["POST"])
 def get_org_list():
