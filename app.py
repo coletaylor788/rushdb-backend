@@ -87,7 +87,7 @@ def get_rushees():
         rushees_list = []
         for key, value in rushees.items():
             new_value = dict(value)
-            new_value['key'] = key
+            new_value['userKey'] = key
             rushees_list.append(new_value)
 
         return json.dumps(rushees_list)
@@ -223,7 +223,7 @@ def get_org_list():
     org_list = []
     for key, value in orgs.items():
         org_map = {}
-        org_map['key'] = key
+        org_map['orgKey'] = key
         org_map['name'] = value['name']
         org_list.append(org_map)
 
