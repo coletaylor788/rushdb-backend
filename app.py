@@ -237,6 +237,35 @@ def get_org_list():
 
     return json.dumps(org_list)
 
+@app.route('/mark-visited', methods=["POST"])
+def mark_visited():
+    userToken = Flask.request.get_json()['userToken']
+    userKey = Flask.request.get_json()['userKey']
+    
+    mark_visted_helper(userToken, userKey)
+
+def mark_visted_helper(userToken, userKey):
+    rushee_edit = {}
+    timestamp = datetime.datetime()
+
+    try:
+        org = get_org(userToken)
+        rushee = db.child(org).child('rushees').child(userKey).get(userToken).val()
+        print(rushee)
+        sys.stdout.flush()
+
+        if 'visited' in rushee.keys:
+            rushee_edit['visited'] = rushee['visited']
+            rushee_edit['visited'].append(timestamp)
+        else:
+            rushee_edit['visited'] = [timestamp]
+
+
+        db.child(org).child('rushees').child(userKey).update(rushee, userToken)
+        return "{\"success\" : true}"
+    except:
+        return "{\"success\" : false}"
+
 
 #sys.stdout.flush()
 
