@@ -246,7 +246,7 @@ def mark_visited():
 
 def mark_visted_helper(userToken, userKey):
     rushee_edit = {}
-    timestamp = datetime.datetime()
+    timestamp = datetime.now()
 
     try:
         org = get_org(userToken)
