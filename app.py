@@ -264,7 +264,9 @@ def mark_visted_helper(userToken, userKey):
         print(rushee_edit)
         sys.stdout.flush()
         db.child(org).child('rushees').child(userKey).update(rushee_edit, userToken)
-        
+        print("hi")
+        sys.stdout.flush()
+
         return "{\"success\" : true}"
     except:
 
