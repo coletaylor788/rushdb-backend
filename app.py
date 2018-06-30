@@ -110,7 +110,7 @@ def submit_rushee():
         org = get_org(userToken)
         new_rushee = db.child(org).child('rushees').push(rushee, userToken)
         mark_visited_helper(userToken, new_rushee['name'])
-        return "{\"success\" : true, \"userKey\" : " + new_rushee['name'] + "}"
+        return "{\"success\" : true, \"userKey\" : \"" + new_rushee['name'] + "\"}"
     except:
         return "{\"success\" : false}"
 
@@ -184,7 +184,7 @@ def temp():
 
     os.remove(userKey + '.jpg')
 
-    return "{\"success\" : true, \"picture\" : " + encoded_string.decode("utf-8") + "}"
+    return "{\"success\" : true, \"picture\" : \"" + encoded_string.decode("utf-8") + "\"}"
 
 @app.route('/add-picture', methods=["POST"])
 def add_picture():
@@ -225,7 +225,7 @@ def get_org_password():
     try:
         org = get_org(userToken)
         password = admin_db.child('org_passwords').child(org).get().val()
-        return "{\"password\" : " + password + "}"
+        return "{\"password\" : \"" + password + "\"}"
     except:
         return "{\"password\" : false}"
 
