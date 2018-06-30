@@ -261,9 +261,13 @@ def mark_visted_helper(userToken, userKey):
             rushee_edit['visited'] = [timestamp]
 
 
+        print(rushee_edit)
+        sys.stdout.flush()
         db.child(org).child('rushees').child(userKey).update(rushee, userToken)
+        
         return "{\"success\" : true}"
     except:
+
         return "{\"success\" : false}"
 
 
