@@ -254,7 +254,7 @@ def mark_visted_helper(userToken, userKey):
         print(rushee)
         sys.stdout.flush()
 
-        if 'visited' in rushee.keys:
+        if 'visited' in rushee.keys():
             rushee_edit['visited'] = rushee['visited']
             rushee_edit['visited'].append(timestamp)
         else:
