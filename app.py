@@ -106,7 +106,8 @@ def submit_rushee():
     
     try:
         org = get_org(userToken)
-        db.child(org).child('rushees').push(rushee, userToken)
+        new_rushee = db.child(org).child('rushees').push(rushee, userToken)
+        mark_visited_helper(userToken, new_rushee['name'])
         return "{\"success\" : true}"
     except:
         return "{\"success\" : false}"
@@ -242,17 +243,15 @@ def mark_visited():
     userToken = Flask.request.get_json()['userToken']
     userKey = Flask.request.get_json()['userKey']
     
-    mark_visted_helper(userToken, userKey)
+    return mark_visited_helper(userToken, userKey)
 
-def mark_visted_helper(userToken, userKey):
+def mark_visited_helper(userToken, userKey):
     rushee_edit = {}
-    timestamp = datetime.now()
+    timestamp = str(datetime.now())
 
     try:
         org = get_org(userToken)
         rushee = db.child(org).child('rushees').child(userKey).get(userToken).val()
-        print(rushee)
-        sys.stdout.flush()
 
         if 'visited' in rushee.keys():
             rushee_edit['visited'] = rushee['visited']
@@ -260,16 +259,10 @@ def mark_visted_helper(userToken, userKey):
         else:
             rushee_edit['visited'] = [timestamp]
 
-
-        print(rushee_edit)
-        sys.stdout.flush()
         db.child(org).child('rushees').child(userKey).update(rushee_edit, userToken)
-        print("hi")
-        sys.stdout.flush()
 
         return "{\"success\" : true}"
     except:
-
         return "{\"success\" : false}"
 
 
