@@ -6,6 +6,7 @@ import sys
 from datetime import datetime
 import json
 from os import environ
+import base64
 
 app = Flask.Flask(__name__, static_url_path='')
 CORS(app)
@@ -50,8 +51,9 @@ def connect_to_admin_database():
 
     service_firebase = pyrebase.initialize_app(service_config)
     db = service_firebase.database()
+    storage = service_firebase.storage()
 
-    return db
+    return db, storage
 
 config = {
     "apiKey": "AIzaSyBJjyzlDHxvM-IcxWZwzYY-cIvtMpVreQU",
@@ -62,7 +64,7 @@ config = {
 
 firebase = pyrebase.initialize_app(config)
 db = firebase.database()
-admin_db = connect_to_admin_database()
+admin_db, admin_storage = connect_to_admin_database()
 
 @app.route('/')
 def hello():
@@ -108,7 +110,7 @@ def submit_rushee():
         org = get_org(userToken)
         new_rushee = db.child(org).child('rushees').push(rushee, userToken)
         mark_visited_helper(userToken, new_rushee['name'])
-        return "{\"success\" : true}"
+        return "{\"success\" : true, \"userKey\" : " + new_rushee['name'] + "}"
     except:
         return "{\"success\" : false}"
 
@@ -166,13 +168,43 @@ def get_brothers():
         return "{\"success\" : false}" 
 
 @app.route('/get-picture', methods=["POST"])
-def get_picture():    
+def temp():
     userToken = Flask.request.get_json()['userToken']
-    picture_name = "Tom-Hulce-as-Larry-Kroger-tom-hulce-38317385-500-270.jpg"
+    userKey = Flask.request.get_json()['userKey']
     
-    url = storage.child('deltatauchi/' + picture_name).download("download.jpg")
+    #try:
+    org = get_org(userToken)
+    db.child(org).child('rushees').child(userKey).get(userToken) # Validate proper authentication
 
-    return url
+    admin_storage.child('images/' + org + '/' + userKey + '.jpg').download(userKey + '.jpg')
+
+    encoded_string = ""
+    with open(userKey + '.jpg', "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read())
+
+    os.remove(userKey + '.jpg')
+
+    return "{\"success\" : true, \"picture\" : " + encoded_string.decode("utf-8") + "}"
+
+@app.route('/add-picture', methods=["POST"])
+def add_picture():
+    userToken = Flask.request.get_json()['userToken']
+    userKey = Flask.request.get_json()['userKey']
+    picture = bytes(Flask.request.get_json()['picture'], 'utf-8')
+
+    try:
+        org = get_org(userToken)
+        db.child(org).child('rushees').child(userKey).get(userToken) # Validate proper authentication
+    
+        with open(userKey + '.jpg', "wb") as temp_image:
+            temp_image.write(base64.decodebytes(picture))
+            thing = admin_storage.child('images/' + org + '/' + userKey + '.jpg').put(userKey + '.jpg')
+
+        os.remove(userKey + '.jpg')
+
+        return "{\"success\" : true}"
+    except:
+        return "{\"success\" : false}"
 
 @app.route('/login', methods=["POST"])
 def login():
