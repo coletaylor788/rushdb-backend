@@ -172,19 +172,22 @@ def temp():
     userToken = Flask.request.get_json()['userToken']
     userKey = Flask.request.get_json()['userKey']
     
-    #try:
-    org = get_org(userToken)
-    db.child(org).child('rushees').child(userKey).get(userToken) # Validate proper authentication
+    try:
+        org = get_org(userToken)
+        db.child(org).child('rushees').child(userKey).get(userToken) # Validate proper authentication
 
-    admin_storage.child('images/' + org + '/' + userKey + '.jpg').download(userKey + '.jpg')
+        admin_storage.child('images/' + org + '/' + userKey + '.jpg').download(userKey + '.jpg')
 
-    encoded_string = ""
-    with open(userKey + '.jpg', "rb") as image_file:
-        encoded_string = base64.b64encode(image_file.read())
+        encoded_string = ""
+        with open(userKey + '.jpg', "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read())
 
-    os.remove(userKey + '.jpg')
+        os.remove(userKey + '.jpg')
 
-    return "{\"success\" : true, \"picture\" : \"" + encoded_string.decode("utf-8") + "\"}"
+        return "{\"success\" : true, \"picture\" : \"" + encoded_string.decode("utf-8") + "\"}"
+    except:
+        return "{\"success\" : false}"
+
 
 @app.route('/add-picture', methods=["POST"])
 def add_picture():
@@ -201,6 +204,10 @@ def add_picture():
             thing = admin_storage.child('images/' + org + '/' + userKey + '.jpg').put(userKey + '.jpg')
 
         os.remove(userKey + '.jpg')
+
+        has_picture_update = {}
+        has_picture_update['hasPicture'] = True
+        db.child(org).child('rushees').child(userKey).update(has_picture_update, userToken)
 
         return "{\"success\" : true}"
     except:
