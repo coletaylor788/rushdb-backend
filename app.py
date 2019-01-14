@@ -7,6 +7,7 @@ from datetime import datetime
 import json
 from os import environ
 import base64
+from flask import jsonify
 
 app = Flask.Flask(__name__, static_url_path='')
 CORS(app)
@@ -125,15 +126,16 @@ def edit_rushee():
             rushee[key] = value
 
     try:
-        user_info = get_user_info(userToken)
-        rushee["notes"] = rushee["notes"].replace("$NAME$", user_info["name"])
-        db.child(user_info["org"]).child('rushees').child(userKey).update(rushee, userToken)
+        org = get_org(userToken)
+        db.child(org).child('rushees').child(userKey).update(rushee, userToken)
         return "{\"success\" : true}"
     except:
         return "{\"success\" : false}"
 
 
-def get_user_info(userToken):
+@app.route('/get-user-info', methods=["POST"])
+def get_user_info():
+    userToken = Flask.request.get_json()['userToken']
     orgs = db.child('organizations').get().val()
     auth = firebase.auth()
     account = auth.get_account_info(userToken)
@@ -142,9 +144,9 @@ def get_user_info(userToken):
     for org, value in orgs.items():
         for org_userId, name in value['brothers'].items():
             if org_userId == userId:
-                return {"org": org, "name": name}
+                return jsonify(org=org, name=name, userId=userId)
 
-    raise ValueError("User not found")
+    return jsonify(success=False)
 
 
 @app.route('/get-org', methods=["POST"])
