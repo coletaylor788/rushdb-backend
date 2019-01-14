@@ -80,7 +80,7 @@ def remove_none(arr):
 def get_rushees():
     #org = Flask.request.get_json()['org']
     userToken = Flask.request.get_json()['userToken']
-    
+
     try:
         org = get_org(userToken)
         rushees = db.child(org).child('rushees').get(userToken).val()
@@ -95,17 +95,17 @@ def get_rushees():
         return json.dumps(rushees_list)
     except:
         return "{\"success\" : false}"
-    
+
 
 @app.route('/submit-rushee', methods=["POST"])
 def submit_rushee():
     userToken = Flask.request.get_json()['userToken']
     rushee = {}
-    
+
     for key, value in Flask.request.get_json().items():
         if not key == 'userToken':
             rushee[key] = value
-    
+
     try:
         org = get_org(userToken)
         new_rushee = db.child(org).child('rushees').push(rushee, userToken)
@@ -119,43 +119,59 @@ def edit_rushee():
     userToken = Flask.request.get_json()['userToken']
     userKey = Flask.request.get_json()['userKey']
     rushee = {}
-    
+
     for key, value in Flask.request.get_json().items():
         if not (key == 'userToken' or key == 'userKey'):
             rushee[key] = value
-    
+
     try:
-        org = get_org(userToken)
-        db.child(org).child('rushees').child(userKey).update(rushee, userToken)
+        user_info = get_org(userToken)
+        rushee["notes"] = rushee["notes"].replace("$NAME$", user_info["name"])
+        db.child(user_info["org"]).child('rushees').child(userKey).update(rushee, userToken)
         return "{\"success\" : true}"
     except:
         return "{\"success\" : false}"
 
+
+def get_user_info(userToken):
+    orgs = db.child('organizations').get().val()
+    auth = firebase.auth()
+    account = auth.get_account_info(userToken)
+    userId = account['users'][0]['localId']
+
+    for org, value in orgs.items():
+        for org_userId, name in value['brothers'].items():
+            if org_userId == userId:
+                return {"org": org, "name": name}
+
+    raise ValueError("User not found")
+
+
 @app.route('/get-org', methods=["POST"])
 def get_org(userToken):
     orgs = db.child('organizations').get().val()
-    
+
     #userToken = Flask.request.get_json()['userToken']
     auth = firebase.auth()
     account = auth.get_account_info(userToken)
     userId = account['users'][0]['localId']
-    
+
     correct_org = None
     for org, value in orgs.items():
         for org_userId, _ in value['brothers'].items():
             if org_userId == userId:
                 return org
-    
+
     return "Error"
 
 @app.route('/get-brothers', methods=["POST"])
-def get_brothers():    
+def get_brothers():
     userToken = Flask.request.get_json()['userToken']
 
     try:
         org = get_org(userToken)
         brothers = db.child('organizations').child(org).child('brothers').get().val()
-        
+
         brothers_list = []
         for uid, name in brothers.items():
             brother_map = {}
@@ -165,13 +181,13 @@ def get_brothers():
 
         return json.dumps(brothers_list)
     except:
-        return "{\"success\" : false}" 
+        return "{\"success\" : false}"
 
 @app.route('/get-picture', methods=["POST"])
 def temp():
     userToken = Flask.request.get_json()['userToken']
     userKey = Flask.request.get_json()['userKey']
-    
+
     try:
         org = get_org(userToken)
         db.child(org).child('rushees').child(userKey).get(userToken) # Validate proper authentication
@@ -198,7 +214,7 @@ def add_picture():
     try:
         org = get_org(userToken)
         db.child(org).child('rushees').child(userKey).get(userToken) # Validate proper authentication
-    
+
         with open(userKey + '.jpg', "wb") as temp_image:
             temp_image.write(base64.decodebytes(picture))
             thing = admin_storage.child('images/' + org + '/' + userKey + '.jpg').put(userKey + '.jpg')
@@ -224,11 +240,11 @@ def login():
         return "{\"userToken\" : \""+ str(user['idToken']) + "\"}"
     except:
         return "{\"userToken\" : false}"
-    
+
 @app.route('/get-org-password', methods=["POST"])
 def get_org_password():
     userToken = Flask.request.get_json()['userToken']
-    
+
     try:
         org = get_org(userToken)
         password = admin_db.child('org_passwords').child(org).get().val()
@@ -253,10 +269,10 @@ def create_new_user():
                 user = auth.create_user_with_email_and_password(email, password)
             except:
                 return "{\"userToken\" : false, \"reason\" : \"User already exists\"}"
-        
+
             uid = str(user['localId'])
             userToken = str(user['idToken'])
-        
+
             admin_db.child('organizations').child(org).child('brothers').child(uid).set(name)
             return "{\"userToken\" : \"" + userToken + "\"}"
         except:
@@ -281,7 +297,7 @@ def get_org_list():
 def mark_visited():
     userToken = Flask.request.get_json()['userToken']
     userKey = Flask.request.get_json()['userKey']
-    
+
     return mark_visited_helper(userToken, userKey)
 
 def mark_visited_helper(userToken, userKey):
@@ -318,4 +334,4 @@ if __name__ == '__main__':
     #TESTING ONLY! Leave commented in production
     #app.run(host='127.0.0.1', port=port)
 
-    
+
