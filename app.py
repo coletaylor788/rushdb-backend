@@ -125,7 +125,7 @@ def edit_rushee():
             rushee[key] = value
 
     try:
-        user_info = get_org(userToken)
+        user_info = get_user_info(userToken)
         rushee["notes"] = rushee["notes"].replace("$NAME$", user_info["name"])
         db.child(user_info["org"]).child('rushees').child(userKey).update(rushee, userToken)
         return "{\"success\" : true}"
