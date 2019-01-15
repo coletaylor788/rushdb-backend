@@ -269,8 +269,8 @@ def create_new_user():
             user = {}
             try:
                 user = auth.create_user_with_email_and_password(email, password)
-            except:
-                return "{\"userToken\" : false, \"reason\" : \"User already exists\"}"
+            except Exception as e:
+                return "{\"userToken\" : false, \"reason\" : \"{}}\"}".format(str(e))
 
             uid = str(user['localId'])
             userToken = str(user['idToken'])
